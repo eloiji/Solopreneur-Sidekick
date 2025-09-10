@@ -66,12 +66,26 @@ const ImageCard: React.FC<{ title: string; imageUrl: string; altText: string; do
 const SocialShareButtons: React.FC<{ text: string }> = ({ text }) => {
     const [copied, setCopied] = useState(false);
     const fbShareUrl = `https://www.facebook.com/sharer/sharer.php?u=https://gemini.google.com&quote=${encodeURIComponent(text)}`;
+    const xShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   
     const handleCopyForInstagram = () => {
       navigator.clipboard.writeText(text).then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       });
+    };
+
+    const handleWebShare = async () => {
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Social Media Post',
+                    text: text,
+                });
+            } catch (error) {
+                console.error('Error using Web Share API:', error);
+            }
+        }
     };
   
     return (
@@ -87,6 +101,19 @@ const SocialShareButtons: React.FC<{ text: string }> = ({ text }) => {
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v2.385z" />
+            </svg>
+          </a>
+        </Tooltip>
+        <Tooltip text="Share on X (Twitter)">
+          <a
+            href={xShareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-slate-500 hover:text-slate-900 transition-colors"
+            aria-label="Share on X (Twitter)"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
             </svg>
           </a>
         </Tooltip>
@@ -108,6 +135,19 @@ const SocialShareButtons: React.FC<{ text: string }> = ({ text }) => {
             )}
           </button>
         </Tooltip>
+        {typeof navigator !== 'undefined' && navigator.share && (
+            <Tooltip text="More sharing options">
+                <button
+                    onClick={handleWebShare}
+                    className="text-slate-500 hover:text-indigo-600 transition-colors"
+                    aria-label="More sharing options"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.368a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                    </svg>
+                </button>
+            </Tooltip>
+        )}
       </div>
     );
 };
