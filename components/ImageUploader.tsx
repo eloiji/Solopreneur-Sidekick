@@ -4,9 +4,10 @@ import type { UploadedImage } from '../types';
 
 interface ImageUploaderProps {
   onImageUpload: (image: UploadedImage) => void;
+  disabled?: boolean;
 }
 
-const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload }) => {
+const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, disabled = false }) => {
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -27,6 +28,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload }) => {
   };
 
   const handleClick = () => {
+    if (disabled) return;
     fileInputRef.current?.click();
   };
 
@@ -38,10 +40,15 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload }) => {
         onChange={handleImageChange}
         className="hidden"
         accept="image/png, image/jpeg, image/webp"
+        disabled={disabled}
       />
       <div
         onClick={handleClick}
-        className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer hover:border-indigo-500 transition-colors duration-200 bg-slate-50"
+        className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-lg transition-colors duration-200 bg-slate-50 ${
+          disabled 
+            ? 'cursor-not-allowed bg-slate-200 opacity-70' 
+            : 'cursor-pointer hover:border-indigo-500'
+        }`}
       >
         {imagePreviewUrl ? (
           <img src={imagePreviewUrl} alt="Preview" className="max-h-48 rounded-lg object-contain" />

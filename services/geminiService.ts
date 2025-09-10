@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import type { UploadedImage, GeneratedContent } from '../types';
 
@@ -155,7 +156,7 @@ async function _generateProductListing(productType: string, coreBenefit: string)
 // Generates just the initial Social Media Post
 async function _generateInitialSocialPost(productType: string, coreBenefit: string): Promise<Pick<GeneratedContent, 'socialMediaPost'>> {
     const prompt = `
-        You are a witty social media manager for a Filipino audience. Create a witty, funny, Taglish social media post.
+        You are an expert social media manager. Create a professional and engaging social media post in English for a general audience.
         - Product Type: ${productType}
         - Core Feature/Benefit: ${coreBenefit}
         Respond with a valid JSON object matching the defined schema.`;
@@ -207,7 +208,7 @@ export const generateProductContent = async (
 
     // Step 2: Generate images if requested
     if (options.images) {
-        const imageEditPrompt = `Using the provided image, create a professional, high-quality, well-lit studio product photograph of it on a seamless, pure white background. The subject should be centered. The final image must be square.`;
+        const imageEditPrompt = `Using the user-provided image of a "${productType}", professionally extract the product and place it on a seamless, pure white background. The final image should be a minimalist, high-quality, well-lit studio product photograph. The product must be centered. The final image must be square. Do not add any text, logos, or watermarks.`;
         
         const mainImagePromise = ai.models.generateContent({
             model: 'gemini-2.5-flash-image-preview',
@@ -253,8 +254,8 @@ export const generateNewSocialMediaPost = async (
   coreBenefit: string
 ): Promise<{ hook: string; body: string; hashtags: string[]; }> => {
   const postGenPrompt = `
-    You are a witty and humorous social media manager with a knack for Filipino humor.
-    Create a completely new and funny social media post in Taglish for the following product.
+    You are an expert social media manager.
+    Create a completely new and engaging social media post in English for the following product. Ensure it is different from previous posts.
 
     Product Information:
     - Product Name: ${productTitle}
@@ -271,3 +272,28 @@ export const generateNewSocialMediaPost = async (
 
   return JSON.parse(response.text.trim());
 };
+
+export const generateTaglishSocialMediaPost = async (
+    productTitle: string,
+    productType: string,
+    coreBenefit: string
+  ): Promise<{ hook: string; body: string; hashtags: string[]; }> => {
+    const postGenPrompt = `
+      You are a witty and humorous social media manager with a knack for Filipino humor.
+      Create a completely new and funny social media post in Taglish for the following product. Ensure it's different from previous posts.
+  
+      Product Information:
+      - Product Name: ${productTitle}
+      - Product Type: ${productType}
+      - Core Benefit: ${coreBenefit}
+      
+      Respond with ONLY a valid JSON object matching the defined schema.`;
+  
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: { parts: [{ text: postGenPrompt }] },
+      config: { responseMimeType: "application/json", responseSchema: socialMediaPostSchema }
+    });
+  
+    return JSON.parse(response.text.trim());
+  };

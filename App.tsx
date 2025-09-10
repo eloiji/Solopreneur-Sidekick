@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import type { UploadedImage, GeneratedContent } from './types';
-import { generateProductContent, generateMoreUsageImages, checkContentSafety, generateNewSocialMediaPost } from './services/geminiService';
+import { generateProductContent, generateMoreUsageImages, checkContentSafety, generateNewSocialMediaPost, generateTaglishSocialMediaPost } from './services/geminiService';
 import ImageUploader from './components/ImageUploader';
 import GeneratedContentDisplay from './components/GeneratedContentDisplay';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -21,6 +21,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingMoreImages, setIsGeneratingMoreImages] = useState(false);
   const [isGeneratingNewPost, setIsGeneratingNewPost] = useState(false);
+  const [isGeneratingTaglishPost, setIsGeneratingTaglishPost] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const [generationOptions, setGenerationOptions] = useState<GenerationOptions>({
@@ -160,6 +161,31 @@ const App: React.FC = () => {
     }
   };
 
+  const handleGenerateTaglishPost = async () => {
+    if (!generatedContent || !productType || !coreBenefit) return;
+
+    setIsGeneratingTaglishPost(true);
+    setError(null);
+    try {
+      const { productTitle } = generatedContent;
+      const newPost = await generateTaglishSocialMediaPost(productTitle || productType, productType, coreBenefit);
+      setGeneratedContent(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          socialMediaPost: [...(prev.socialMediaPost || []), newPost],
+        };
+      });
+    } catch (err) {
+      console.error(err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate a new Taglish social media post.';
+      setError(errorMessage);
+    } finally {
+      setIsGeneratingTaglishPost(false);
+    }
+  };
+
+
   const isFormIncomplete = !image || !productType || !coreBenefit;
 
   return (
@@ -182,7 +208,7 @@ const App: React.FC = () => {
                   <label className="block text-sm font-medium text-slate-700 mb-2">
                     1. Product Photo
                   </label>
-                  <ImageUploader key={resetKey} onImageUpload={handleImageUpload} />
+                  <ImageUploader key={resetKey} onImageUpload={handleImageUpload} disabled={isLoading} />
                 </div>
 
                 <div>
@@ -195,7 +221,8 @@ const App: React.FC = () => {
                     value={productType}
                     onChange={(e) => setProductType(e.target.value)}
                     placeholder="e.g., e-book, Notion template, digital planner"
-                    className="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-200 disabled:text-slate-500 disabled:cursor-not-allowed"
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -209,7 +236,8 @@ const App: React.FC = () => {
                     value={coreBenefit}
                     onChange={(e) => setCoreBenefit(e.target.value)}
                     placeholder="e.g., A planner to help students track assignments."
-                    className="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-200 disabled:text-slate-500 disabled:cursor-not-allowed"
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -232,11 +260,12 @@ const App: React.FC = () => {
                                             type="checkbox"
                                             checked={generationOptions[optionKey]}
                                             onChange={handleCheckboxChange}
-                                            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600"
+                                            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600 disabled:cursor-not-allowed"
+                                            disabled={isLoading}
                                         />
                                     </div>
                                     <div className="ml-3 text-sm leading-6">
-                                        <label htmlFor={optionKey} className="font-medium text-slate-900">
+                                        <label htmlFor={optionKey} className={`font-medium text-slate-900 ${isLoading ? 'text-slate-500' : ''}`}>
                                             {labels[optionKey]}
                                         </label>
                                     </div>
@@ -340,6 +369,8 @@ const App: React.FC = () => {
                         isGeneratingMore={isGeneratingMoreImages}
                         onGenerateNewSocialPost={handleGenerateNewSocialPost}
                         isGeneratingNewPost={isGeneratingNewPost}
+                        onGenerateTaglishPost={handleGenerateTaglishPost}
+                        isGeneratingTaglishPost={isGeneratingTaglishPost}
                     />
                 )}
                 {!isLoading && !error && !generatedContent && (
