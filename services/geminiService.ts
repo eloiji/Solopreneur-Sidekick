@@ -55,8 +55,12 @@ const socialMediaPostSchema = {
             items: { type: Type.STRING },
             description: "A list of 3-5 relevant and trending hashtags."
         },
+        imagePrompt: {
+            type: Type.STRING,
+            description: "A detailed, creative, and photorealistic prompt to generate a square image for this social media post. The prompt should describe a scene that is visually appealing and relevant to the product and post content. Describe the style, subject, and environment. For example: 'A flat lay of a digital planner on a clean, minimalist desk with a cup of coffee, a succulent, and stylish gold pens. The lighting is bright and airy.'"
+        }
     },
-    required: ["hook", "body", "hashtags"]
+    required: ["hook", "body", "hashtags", "imagePrompt"]
 };
 
 
@@ -154,9 +158,9 @@ async function _generateProductListing(productType: string, coreBenefit: string)
 }
 
 // Generates just the initial Social Media Post
-async function _generateInitialSocialPost(productType: string, coreBenefit: string): Promise<Pick<GeneratedContent, 'socialMediaPost'>> {
+async function _generateInitialSocialPost(image: UploadedImage, productType: string, coreBenefit: string): Promise<Pick<GeneratedContent, 'socialMediaPost'>> {
     const prompt = `
-        You are an expert social media manager. Create a professional and engaging social media post in English for a general audience.
+        You are a witty and expert social media manager. Create a professional, engaging, and witty social media post in English for a general audience.
         - Product Type: ${productType}
         - Core Feature/Benefit: ${coreBenefit}
         Respond with a valid JSON object matching the defined schema.`;
@@ -178,7 +182,32 @@ async function _generateInitialSocialPost(productType: string, coreBenefit: stri
         contents: { parts: [{ text: prompt }] },
         config: { responseMimeType: "application/json", responseSchema: schema }
     });
-    return JSON.parse(response.text.trim());
+    
+    const content = JSON.parse(response.text.trim());
+    
+    if (content.socialMediaPost && content.socialMediaPost.length > 0) {
+        const post = content.socialMediaPost[0];
+        if (post.imagePrompt) {
+            try {
+                const socialImagePrompt = `Take the product from the user-provided image and seamlessly integrate it into the following photorealistic lifestyle scene, suitable for a social media post: "${post.imagePrompt}". The product is a "${productType}" that helps with "${coreBenefit}". The final image must be high-quality, square, and have a vibrant, eye-catching aesthetic suitable for social media. Do not add any text, logos, or watermarks.`;
+                const imageResponse = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash-image-preview',
+                    contents: { parts: [{ inlineData: { data: image.base64, mimeType: image.mimeType } }, { text: socialImagePrompt }] },
+                    config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
+                });
+
+                const imagePart = imageResponse.candidates?.[0]?.content?.parts.find(part => part.inlineData);
+                if (imagePart?.inlineData) {
+                  post.imageBase64 = imagePart.inlineData.data;
+                }
+            } catch (e) {
+                console.error("Failed to generate social media image for initial post:", e);
+                // Gracefully fail, post can be displayed without an image.
+            }
+            delete post.imagePrompt;
+        }
+    }
+    return content;
 }
 
 export const generateProductContent = async (
@@ -196,7 +225,7 @@ export const generateProductContent = async (
         textPromises.push(_generateProductListing(productType, coreBenefit));
     }
     if (options.socialMedia) {
-        textPromises.push(_generateInitialSocialPost(productType, coreBenefit));
+        textPromises.push(_generateInitialSocialPost(image, productType, coreBenefit));
     }
 
     if (textPromises.length > 0) {
@@ -257,13 +286,14 @@ export const generateMoreUsageImages = async (
 };
 
 export const generateNewSocialMediaPost = async (
+  image: UploadedImage,
   productTitle: string,
   productType: string,
   coreBenefit: string
-): Promise<{ hook: string; body: string; hashtags: string[]; }> => {
+): Promise<{ hook: string; body: string; hashtags: string[]; imageBase64?: string; }> => {
   const postGenPrompt = `
-    You are an expert social media manager.
-    Create a completely new and engaging social media post in English for the following product. Ensure it is different from previous posts.
+    You are a witty and expert social media manager.
+    Create a completely new, engaging, and witty social media post in English for the following product. Ensure it is different from previous posts.
 
     Product Information:
     - Product Name: ${productTitle}
@@ -278,14 +308,36 @@ export const generateNewSocialMediaPost = async (
     config: { responseMimeType: "application/json", responseSchema: socialMediaPostSchema }
   });
 
-  return JSON.parse(response.text.trim());
+  const postContent = JSON.parse(response.text.trim());
+  const { imagePrompt } = postContent;
+
+  if (imagePrompt) {
+      try {
+          const socialImagePrompt = `Take the product from the user-provided image and seamlessly integrate it into the following photorealistic lifestyle scene, suitable for a social media post: "${imagePrompt}". The product is a "${productType}" that helps with "${coreBenefit}". The final image must be high-quality, square, and have a vibrant, eye-catching aesthetic suitable for social media. Do not add any text, logos, or watermarks.`;
+          const imageResponse = await ai.models.generateContent({
+              model: 'gemini-2.5-flash-image-preview',
+              contents: { parts: [{ inlineData: { data: image.base64, mimeType: image.mimeType } }, { text: socialImagePrompt }] },
+              config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
+          });
+          const imagePart = imageResponse.candidates?.[0]?.content?.parts.find(part => part.inlineData);
+          if (imagePart?.inlineData) {
+              postContent.imageBase64 = imagePart.inlineData.data;
+          }
+      } catch (e) {
+          console.error("Failed to generate new social media image:", e);
+      }
+  }
+
+  delete postContent.imagePrompt;
+  return postContent;
 };
 
 export const generateTaglishSocialMediaPost = async (
+    image: UploadedImage,
     productTitle: string,
     productType: string,
     coreBenefit: string
-  ): Promise<{ hook: string; body: string; hashtags: string[]; }> => {
+  ): Promise<{ hook: string; body: string; hashtags: string[]; imageBase64?: string; }> => {
     const postGenPrompt = `
       You are a witty and humorous social media manager with a knack for Filipino humor.
       Create a completely new and funny social media post in Taglish for the following product. Ensure it's different from previous posts.
@@ -303,5 +355,26 @@ export const generateTaglishSocialMediaPost = async (
       config: { responseMimeType: "application/json", responseSchema: socialMediaPostSchema }
     });
   
-    return JSON.parse(response.text.trim());
+    const postContent = JSON.parse(response.text.trim());
+    const { imagePrompt } = postContent;
+
+    if (imagePrompt) {
+        try {
+            const socialImagePrompt = `Take the product from the user-provided image and seamlessly integrate it into the following photorealistic lifestyle scene, suitable for a social media post: "${imagePrompt}". The product is a "${productType}" that helps with "${coreBenefit}". The final image must be high-quality, square, and have a vibrant, eye-catching aesthetic suitable for social media. Do not add any text, logos, or watermarks.`;
+            const imageResponse = await ai.models.generateContent({
+                model: 'gemini-2.5-flash-image-preview',
+                contents: { parts: [{ inlineData: { data: image.base64, mimeType: image.mimeType } }, { text: socialImagePrompt }] },
+                config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
+            });
+            const imagePart = imageResponse.candidates?.[0]?.content?.parts.find(part => part.inlineData);
+            if (imagePart?.inlineData) {
+                postContent.imageBase64 = imagePart.inlineData.data;
+            }
+        } catch (e) {
+            console.error("Failed to generate Taglish social media image:", e);
+        }
+    }
+
+    delete postContent.imagePrompt;
+    return postContent;
   };

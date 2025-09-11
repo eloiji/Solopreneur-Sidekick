@@ -1,4 +1,3 @@
-
 export interface UploadedImage {
   base64: string;
   mimeType: string;
@@ -15,6 +14,7 @@ export interface GeneratedContent {
     hook: string;
     body: string;
     hashtags: string[];
+    imageBase64?: string;
   }[];
   productImageBase64?: string;
   usageImagesBase64?: string[];

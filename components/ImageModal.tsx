@@ -68,13 +68,13 @@ const ImageModal: React.FC<ImageModalProps> = ({ imageUrl, onClose }) => {
       ref={modalRef}
     >
       <div 
-        className="relative bg-white dark:bg-slate-800 p-2 rounded-lg shadow-2xl max-w-4xl max-h-[90vh]"
+        className="relative bg-slate-800 p-2 rounded-lg shadow-2xl max-w-4xl max-h-[90vh]"
         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking on the image container
       >
         <img src={imageUrl} alt="Enlarged view" className="max-w-full max-h-[85vh] object-contain rounded" />
         <button
           onClick={onClose}
-          className="absolute -top-4 -right-4 h-10 w-10 bg-white dark:bg-slate-700 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center transition-transform duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          className="absolute -top-4 -right-4 h-10 w-10 bg-slate-700 rounded-full text-slate-200 hover:bg-slate-600 flex items-center justify-center transition-transform duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           aria-label="Close image view"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
