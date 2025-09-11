@@ -233,14 +233,14 @@ const App: React.FC = () => {
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">
-                    1. Product Photo
+                    Product photo or design
                   </label>
                   <ImageUploader key={resetKey} onImageUpload={handleImageUpload} disabled={isAnyGenerationInProgress} />
                 </div>
 
                 <div>
                   <label htmlFor="product-type" className="block text-sm font-medium text-slate-300">
-                    2. Product Type
+                    Product Type
                   </label>
                   <input
                     type="text"
@@ -255,7 +255,7 @@ const App: React.FC = () => {
 
                 <div>
                   <label htmlFor="core-benefit" className="block text-sm font-medium text-slate-300">
-                    3. Core Feature / Benefit
+                    Core Feature / Benefit
                   </label>
                   <textarea
                     id="core-benefit"
@@ -270,7 +270,7 @@ const App: React.FC = () => {
 
                 <div>
                     <fieldset>
-                      <legend className="block text-sm font-medium text-slate-300">4. Content to Generate</legend>
+                      <legend className="block text-sm font-medium text-slate-300">Content to Generate</legend>
                       <div className="mt-2 space-y-2">
                           {Object.keys(generationOptions).map((key) => {
                               const optionKey = key as keyof GenerationOptions;
