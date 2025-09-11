@@ -64,92 +64,123 @@ const ImageCard: React.FC<{ title: string; imageUrl: string; altText: string; do
     </div>
 );
 
-const SocialShareButtons: React.FC<{ text: string }> = ({ text }) => {
+interface SocialShareButtonsProps {
+    text: string;
+    imageBase64?: string;
+}
+
+const SocialShareButtons: React.FC<SocialShareButtonsProps> = ({ text, imageBase64 }) => {
     const [copied, setCopied] = useState(false);
-    const fbShareUrl = `https://www.facebook.com/sharer/sharer.php?u=https://gemini.google.com&quote=${encodeURIComponent(text)}`;
-    const xShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-  
-    const handleCopyForInstagram = () => {
-      navigator.clipboard.writeText(text).then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      });
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(text).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
     };
 
     const handleWebShare = async () => {
-        if (navigator.share) {
+        if (typeof navigator === 'undefined' || !navigator.share) {
+            console.error("Web Share API not supported.");
+            return;
+        };
+
+        const shareData: ShareData = {
+            title: 'Social Media Post',
+            text: text,
+        };
+
+        if (imageBase64) {
             try {
-                await navigator.share({
-                    title: 'Social Media Post',
-                    text: text,
-                });
+                const response = await fetch(`data:image/jpeg;base64,${imageBase64}`);
+                const blob = await response.blob();
+                const file = new File([blob], 'social-post.jpg', { type: 'image/jpeg' });
+                
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    shareData.files = [file];
+                } else {
+                    console.log("This browser cannot share files, sharing text only.");
+                }
             } catch (error) {
-                console.error('Error using Web Share API:', error);
+                console.error('Error converting base64 to file for sharing:', error);
+            }
+        }
+
+        try {
+            await navigator.share(shareData);
+        } catch (error) {
+            if ((error as DOMException).name !== 'AbortError') {
+                 console.error('Error using Web Share API:', error);
             }
         }
     };
   
+    const canShare = typeof navigator !== 'undefined' && !!navigator.share;
+    const imageUrl = imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : '';
+    const actionButtonClasses = "px-4 py-2 text-sm font-medium rounded-lg flex items-center justify-center transition-all duration-200 bg-slate-700 text-slate-200 hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-slate-800 disabled:bg-slate-500 disabled:cursor-not-allowed";
+
     return (
-      <div className="mt-4 pt-3 border-t border-slate-700 flex items-center gap-3">
-        <span className="text-sm font-medium text-slate-400">Share:</span>
-        <Tooltip text="Share on Facebook">
-          <a
-            href={fbShareUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-slate-400 hover:text-blue-500 transition-colors rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-slate-800"
-            aria-label="Share on Facebook"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v2.385z" />
-            </svg>
-          </a>
-        </Tooltip>
-        <Tooltip text="Share on X (Twitter)">
-          <a
-            href={xShareUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-slate-400 hover:text-slate-200 transition-colors rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-slate-800"
-            aria-label="Share on X (Twitter)"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-            </svg>
-          </a>
-        </Tooltip>
-        <Tooltip text={copied ? "Copied to clipboard!" : "Copy post for Instagram"}>
-          <button
-            onClick={handleCopyForInstagram}
-            className="text-slate-400 hover:text-pink-500 transition-colors disabled:text-green-600 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-slate-800"
-            aria-label="Copy post for Instagram"
-            disabled={copied}
-          >
-            {copied ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
+        <div className="mt-4 pt-4 border-t border-slate-700">
+            {canShare ? (
+                // Modern Share UI for supported devices (e.g., mobile)
+                <div className="flex flex-col items-start gap-2">
+                    <span className="text-sm font-medium text-slate-300">Share post with image:</span>
+                    <button
+                        onClick={handleWebShare}
+                        className="w-full sm:w-auto flex justify-center items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        aria-label="Share post using device's share options"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.368a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                        </svg>
+                        Share Post
+                    </button>
+                </div>
             ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.011 3.584-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07s-3.584-.012-4.85-.07c-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.069-1.645-.069-4.85s.011-3.584.069-4.85c.149-3.225 1.664-4.771 4.919-4.919 1.266-.058 1.644-.07 4.85-.07zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948s.014 3.667.072 4.947c.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072s3.667-.014 4.947-.072c4.358-.2 6.78-2.618 6.98-6.98.059-1.281.073-1.689.073-4.948s-.014-3.667-.072-4.947c-.2-4.358-2.618-6.78-6.98-6.98-1.281-.059-1.689-.073-4.948-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.162 6.162 6.162 6.162-2.759 6.162-6.162-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.79 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.441 1.441 1.441 1.441-.645 1.441-1.441-.645-1.44-1.441-1.44z" />
-                </svg>
+                // Fallback UI for unsupported browsers (e.g., desktop)
+                <div className="flex flex-col items-start gap-3">
+                     <span className="text-sm font-medium text-slate-300">Share on desktop:</span>
+                     <p className="text-xs text-slate-400 -mt-2">Download the image and copy the text to post manually.</p>
+                     <div className="flex items-center gap-3 flex-wrap">
+                        {imageBase64 && (
+                            <a
+                                href={imageUrl}
+                                download="social-post.jpeg"
+                                className={actionButtonClasses}
+                                aria-label="Download social media image"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Download Image
+                            </a>
+                        )}
+                        <button
+                            onClick={handleCopy}
+                            className={`${actionButtonClasses} ${copied ? '!bg-green-600 !text-white' : ''}`}
+                            disabled={copied}
+                            aria-label={copied ? "Text copied to clipboard" : "Copy post text to clipboard"}
+                        >
+                            {copied ? (
+                                <>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Copied!
+                                </>
+                            ) : (
+                                <>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                    Copy Text
+                                </>
+                            )}
+                        </button>
+                     </div>
+                </div>
             )}
-          </button>
-        </Tooltip>
-        {typeof navigator !== 'undefined' && navigator.share && (
-            <Tooltip text="More sharing options">
-                <button
-                    onClick={handleWebShare}
-                    className="text-slate-400 hover:text-indigo-500 transition-colors rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-slate-800"
-                    aria-label="More sharing options"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.368a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                    </svg>
-                </button>
-            </Tooltip>
-        )}
-      </div>
+        </div>
     );
 };
 
@@ -277,7 +308,7 @@ const GeneratedContentDisplay: React.FC<GeneratedContentDisplayProps> = ({
                                                 <p className="font-bold">{post.hook}</p>
                                                 <p>{post.body}</p>
                                                 <p className="text-indigo-400 font-medium pt-2">{post.hashtags.join(' ')}</p>
-                                                <SocialShareButtons text={fullSocialPost} />
+                                                <SocialShareButtons text={fullSocialPost} imageBase64={post.imageBase64} />
                                             </div>
                                         </div>
                                     </ContentCard>
