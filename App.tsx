@@ -13,6 +13,23 @@ type GenerationOptions = {
   socialMedia: boolean;
 };
 
+// Gibberish check helper function
+const isGibberish = (text: string): boolean => {
+  const sanitizedText = text.trim().toLowerCase();
+  if (sanitizedText.length < 4) return false; // Ignore very short text
+  // Check for no vowels (and not just numbers/symbols)
+  const hasVowels = /[aeiou]/i.test(sanitizedText);
+  const hasLetters = /[a-z]/i.test(sanitizedText);
+  if (hasLetters && !hasVowels) {
+    return true;
+  }
+  // Check for excessive repetition of the same character
+  if (/(.)\1{4,}/.test(sanitizedText)) {
+    return true;
+  }
+  return false;
+};
+
 const App: React.FC = () => {
   const [image, setImage] = useState<UploadedImage | null>(null);
   const [productType, setProductType] = useState('');
@@ -37,6 +54,8 @@ const App: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'product' | 'images' | 'social'>('product');
   const [resetKey, setResetKey] = useState(0);
+
+  const isAnyGenerationInProgress = isLoading || isGeneratingMoreImages || isGeneratingNewPost || isGeneratingTaglishPost;
 
   const availableTabs = useMemo(() => {
     const tabs: ('product' | 'images' | 'social')[] = [];
@@ -69,6 +88,7 @@ const App: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // --- Synchronous validation checks ---
     if (!image || !productType || !coreBenefit) {
       setError('Please fill out all fields and upload an image.');
       return;
@@ -77,54 +97,34 @@ const App: React.FC = () => {
       setError('Please select at least one type of content to generate.');
       return;
     }
-    
-    // Gibberish check
-    const isGibberish = (text: string): boolean => {
-      const sanitizedText = text.trim().toLowerCase();
-      if (sanitizedText.length < 4) return false; // Ignore very short text
-      // Check for no vowels (and not just numbers/symbols)
-      const hasVowels = /[aeiou]/i.test(sanitizedText);
-      const hasLetters = /[a-z]/i.test(sanitizedText);
-      if (hasLetters && !hasVowels) {
-        return true;
-      }
-      // Check for excessive repetition of the same character
-      if (/(.)\1{4,}/.test(sanitizedText)) {
-        return true;
-      }
-      return false;
-    };
-
     if (isGibberish(productType) || isGibberish(coreBenefit)) {
       setError('Please provide clear, readable text for the product. The current input seems unlikely to produce good results from the AI.');
       return;
     }
-
-    setError(null);
     
+    // --- Set loading state immediately after validation ---
+    setIsLoading(true);
+    setError(null);
+    setGeneratedContent(null);
+    setDisplayOptions({ productListing: false, images: false, socialMedia: false });
+
     try {
+      // Safety Check
       const isSafe = await checkContentSafety(productType, coreBenefit);
       if (!isSafe) {
         setError('The product information provided does not meet our safety guidelines. You cannot generate content for this product.');
-        return;
+        return; // The 'finally' block will handle turning off the loading state.
       }
-    } catch (err) {
-      console.error(err);
-      setError('An error occurred during the safety check. Please try again.');
-      return;
-    }
+      
+      // Determine the first tab to show
+      const firstTab = generationOptions.productListing ? 'product' : generationOptions.images ? 'images' : 'social';
+      setActiveTab(firstTab);
 
-    setIsLoading(true);
-    setGeneratedContent(null);
-    
-    // Determine the first tab to show
-    const firstTab = generationOptions.productListing ? 'product' : generationOptions.images ? 'images' : 'social';
-    setActiveTab(firstTab);
-
-    try {
+      // Generate Content
       const content = await generateProductContent(image, productType, coreBenefit, generationOptions);
       setGeneratedContent(content);
       setDisplayOptions(generationOptions); // Set display options only on success
+
     } catch (err) {
       console.error(err);
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred. Please try again.';
@@ -136,13 +136,14 @@ const App: React.FC = () => {
   };
   
   const handleGenerateMoreImages = async () => {
-    if (!image || !productType || !coreBenefit || !generatedContent?.productTitle) return;
+    if (!image || !productType || !coreBenefit || !generatedContent) return;
 
     setIsGeneratingMoreImages(true);
     setError(null);
 
     try {
-        const newImages = await generateMoreUsageImages(image, generatedContent.productTitle, productType, coreBenefit);
+        const productTitleForImages = generatedContent.productTitle || productType;
+        const newImages = await generateMoreUsageImages(image, productTitleForImages, productType, coreBenefit);
         setGeneratedContent(prevContent => {
             if (!prevContent) return null;
             return {
@@ -234,7 +235,7 @@ const App: React.FC = () => {
                   <label className="block text-sm font-medium text-slate-300 mb-2">
                     1. Product Photo
                   </label>
-                  <ImageUploader key={resetKey} onImageUpload={handleImageUpload} disabled={isLoading} />
+                  <ImageUploader key={resetKey} onImageUpload={handleImageUpload} disabled={isAnyGenerationInProgress} />
                 </div>
 
                 <div>
@@ -248,7 +249,7 @@ const App: React.FC = () => {
                     onChange={(e) => setProductType(e.target.value)}
                     placeholder="e.g., e-book, Notion template, digital planner"
                     className={inputClasses}
-                    disabled={isLoading}
+                    disabled={isAnyGenerationInProgress}
                   />
                 </div>
 
@@ -263,7 +264,7 @@ const App: React.FC = () => {
                     onChange={(e) => setCoreBenefit(e.target.value)}
                     placeholder="e.g., A planner to help students track assignments."
                     className={inputClasses}
-                    disabled={isLoading}
+                    disabled={isAnyGenerationInProgress}
                   />
                 </div>
 
@@ -288,11 +289,11 @@ const App: React.FC = () => {
                                               checked={generationOptions[optionKey]}
                                               onChange={handleCheckboxChange}
                                               className="h-4 w-4 rounded border-slate-500 text-indigo-600 focus:ring-indigo-600 disabled:cursor-not-allowed"
-                                              disabled={isLoading}
+                                              disabled={isAnyGenerationInProgress}
                                           />
                                       </div>
                                       <div className="ml-3 text-sm leading-6">
-                                          <label htmlFor={optionKey} className={`font-medium text-slate-100 ${isLoading ? 'text-slate-400' : ''}`}>
+                                          <label htmlFor={optionKey} className={`font-medium text-slate-100 ${isAnyGenerationInProgress ? 'text-slate-400' : ''}`}>
                                               {labels[optionKey]}
                                           </label>
                                       </div>
@@ -308,7 +309,7 @@ const App: React.FC = () => {
                 <Tooltip text="Fill out the form to generate all selected content types">
                   <button
                     type="submit"
-                    disabled={isFormIncomplete || isLoading}
+                    disabled={isFormIncomplete || isAnyGenerationInProgress}
                     className="w-full flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors duration-200"
                   >
                     {isLoading ? 'Generating... Please Wait' : '✨ Generate Content'}
@@ -318,7 +319,7 @@ const App: React.FC = () => {
                    <button
                       type="button"
                       onClick={handleReset}
-                      disabled={isLoading}
+                      disabled={isAnyGenerationInProgress}
                       className="w-full px-4 py-3 text-sm font-medium bg-slate-700 text-slate-200 border border-slate-600 rounded-lg hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:bg-slate-700/50 disabled:text-slate-500 disabled:cursor-not-allowed"
                   >
                       Reset

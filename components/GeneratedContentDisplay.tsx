@@ -3,6 +3,7 @@ import type { GeneratedContent } from '../types';
 import CopyButton from './CopyButton';
 import ImageModal from './ImageModal';
 import Tooltip from './Tooltip';
+import LoadingSpinner from './LoadingSpinner';
 
 interface GeneratedContentDisplayProps {
   content: GeneratedContent;
@@ -196,6 +197,8 @@ const GeneratedContentDisplay: React.FC<GeneratedContentDisplayProps> = ({
 }) => {
     const [viewingImage, setViewingImage] = useState<string | null>(null);
 
+    const isAnyActionInProgress = isGeneratingMore || isGeneratingNewPost || isGeneratingTaglishPost;
+
     const fullDescription = content.productDescription ? `${content.productDescription.hook}\n\n${content.productDescription.features.map(f => `• ${f}`).join('\n')}\n\n${content.productDescription.cta}` : '';
     const mainImageUrl = content.productImageBase64 ? `data:image/jpeg;base64,${content.productImageBase64}`: '';
     
@@ -263,11 +266,18 @@ const GeneratedContentDisplay: React.FC<GeneratedContentDisplayProps> = ({
                                 </div>
                             </div>
                         </div>
+
+                        {isGeneratingMore && (
+                            <div className="flex justify-center py-4">
+                                <LoadingSpinner />
+                            </div>
+                        )}
+
                         <div className="mt-6 pt-4 border-t border-slate-700 flex flex-wrap justify-center gap-4">
                             <Tooltip text="Generate 4 more unique usage example images">
                               <button
                                   onClick={onGenerateMore}
-                                  disabled={isGeneratingMore}
+                                  disabled={isAnyActionInProgress}
                                   className="flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-colors duration-200"
                               >
                                   {isGeneratingMore ? 'Generating...' : 'Generate More Images' }
@@ -315,11 +325,18 @@ const GeneratedContentDisplay: React.FC<GeneratedContentDisplayProps> = ({
                                 );
                             })}
                         </div>
+                        
+                        {(isGeneratingNewPost || isGeneratingTaglishPost) && (
+                            <div className="flex justify-center py-4">
+                                <LoadingSpinner />
+                            </div>
+                        )}
+
                         <div className="mt-6 pt-4 border-t border-slate-700 flex flex-wrap justify-center gap-4">
                             <Tooltip text="Generate another engaging social media post">
                               <button
                                   onClick={onGenerateNewSocialPost}
-                                  disabled={isGeneratingNewPost || isGeneratingTaglishPost}
+                                  disabled={isAnyActionInProgress}
                                   className="flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-colors duration-200"
                               >
                                   {isGeneratingNewPost ? 'Generating...' : 'New Post (English)'}
@@ -328,7 +345,7 @@ const GeneratedContentDisplay: React.FC<GeneratedContentDisplayProps> = ({
                              <Tooltip text="Generate a witty Taglish social media post">
                               <button
                                   onClick={onGenerateTaglishPost}
-                                  disabled={isGeneratingNewPost || isGeneratingTaglishPost}
+                                  disabled={isAnyActionInProgress}
                                   className="flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-colors duration-200"
                               >
                                   {isGeneratingTaglishPost ? 'Generating...' : 'New Post (Taglish)'}
