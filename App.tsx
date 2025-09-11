@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { UploadedImage, GeneratedContent } from './types';
 import { generateProductContent, generateMoreUsageImages, checkContentSafety, generateNewSocialMediaPost, generateTaglishSocialMediaPost } from './services/geminiService';
 import ImageUploader from './components/ImageUploader';
@@ -29,7 +29,7 @@ const App: React.FC = () => {
     images: true,
     socialMedia: true,
   });
-  const [displayOptions, setDisplayOptions] = useState<GenerationOptions>({
+  const [displayOptions, setDisplayOptions] = useState<Omit<GenerationOptions, 'video'>>({
     productListing: false,
     images: false,
     socialMedia: false,
@@ -37,6 +37,31 @@ const App: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'product' | 'images' | 'social'>('product');
   const [resetKey, setResetKey] = useState(0);
+
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const storedTheme = window.localStorage.getItem('theme');
+      if (storedTheme) {
+        return storedTheme;
+      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+  };
 
   const availableTabs = useMemo(() => {
     const tabs: ('product' | 'images' | 'social')[] = [];
@@ -187,32 +212,51 @@ const App: React.FC = () => {
 
 
   const isFormIncomplete = !image || !productType || !coreBenefit;
+  const inputClasses = "mt-1 block w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm placeholder-slate-400 dark:placeholder-slate-500 text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-200 disabled:dark:bg-slate-600 disabled:text-slate-500 disabled:cursor-not-allowed";
 
   return (
-    <div className="min-h-screen bg-slate-100 font-sans p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen font-sans p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        <header className="text-center mb-8">
-          <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 tracking-tight">
-            Solopreneur Sidekick
-          </h1>
-          <p className="mt-3 text-lg text-slate-600 max-w-2xl mx-auto">
-            Your AI partner for creating amazing product content in seconds.
-          </p>
+        <header className="mb-8 relative bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 shadow-md p-6 sm:p-8 rounded-2xl">
+          <div className="text-center">
+            <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-slate-50 tracking-tight">
+              Solopreneur Sidekick
+            </h1>
+            <p className="mt-3 text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+              Your AI partner for creating amazing product content in seconds.
+            </p>
+          </div>
+          <button
+            onClick={toggleTheme}
+            className="absolute top-4 right-4 p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-800 transition-colors"
+            aria-label="Toggle dark mode"
+          >
+            {theme === 'light' ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            )}
+          </button>
         </header>
 
         <main className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-1 bg-white p-6 rounded-2xl shadow-lg border border-slate-200">
+          <section aria-labelledby="form-heading" className="md:col-span-1 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700">
+            <h2 id="form-heading" className="sr-only">Product Information Form</h2>
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     1. Product Photo
                   </label>
                   <ImageUploader key={resetKey} onImageUpload={handleImageUpload} disabled={isLoading} />
                 </div>
 
                 <div>
-                  <label htmlFor="product-type" className="block text-sm font-medium text-slate-700">
+                  <label htmlFor="product-type" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                     2. Product Type
                   </label>
                   <input
@@ -221,13 +265,13 @@ const App: React.FC = () => {
                     value={productType}
                     onChange={(e) => setProductType(e.target.value)}
                     placeholder="e.g., e-book, Notion template, digital planner"
-                    className="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-200 disabled:text-slate-500 disabled:cursor-not-allowed"
+                    className={inputClasses}
                     disabled={isLoading}
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="core-benefit" className="block text-sm font-medium text-slate-700">
+                  <label htmlFor="core-benefit" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                     3. Core Feature / Benefit
                   </label>
                   <textarea
@@ -236,43 +280,45 @@ const App: React.FC = () => {
                     value={coreBenefit}
                     onChange={(e) => setCoreBenefit(e.target.value)}
                     placeholder="e.g., A planner to help students track assignments."
-                    className="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-200 disabled:text-slate-500 disabled:cursor-not-allowed"
+                    className={inputClasses}
                     disabled={isLoading}
                   />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-slate-700">4. Content to Generate</label>
-                    <div className="mt-2 space-y-2">
-                        {Object.keys(generationOptions).map((key) => {
-                            const optionKey = key as keyof GenerationOptions;
-                            const labels = {
-                                productListing: 'Product Listing',
-                                images: 'Images',
-                                socialMedia: 'Social Media Post'
-                            };
-                            return (
-                                <div key={optionKey} className="relative flex items-start">
-                                    <div className="flex h-6 items-center">
-                                        <input
-                                            id={optionKey}
-                                            name={optionKey}
-                                            type="checkbox"
-                                            checked={generationOptions[optionKey]}
-                                            onChange={handleCheckboxChange}
-                                            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600 disabled:cursor-not-allowed"
-                                            disabled={isLoading}
-                                        />
-                                    </div>
-                                    <div className="ml-3 text-sm leading-6">
-                                        <label htmlFor={optionKey} className={`font-medium text-slate-900 ${isLoading ? 'text-slate-500' : ''}`}>
-                                            {labels[optionKey]}
-                                        </label>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                    <fieldset>
+                      <legend className="block text-sm font-medium text-slate-700 dark:text-slate-300">4. Content to Generate</legend>
+                      <div className="mt-2 space-y-2">
+                          {Object.keys(generationOptions).map((key) => {
+                              const optionKey = key as keyof GenerationOptions;
+                              const labels = {
+                                  productListing: 'Product Listing',
+                                  images: 'Images',
+                                  socialMedia: 'Social Media Post',
+                              };
+                              return (
+                                  <div key={optionKey} className="relative flex items-start">
+                                      <div className="flex h-6 items-center">
+                                          <input
+                                              id={optionKey}
+                                              name={optionKey}
+                                              type="checkbox"
+                                              checked={generationOptions[optionKey]}
+                                              onChange={handleCheckboxChange}
+                                              className="h-4 w-4 rounded border-slate-300 dark:border-slate-500 text-indigo-600 focus:ring-indigo-600 disabled:cursor-not-allowed"
+                                              disabled={isLoading}
+                                          />
+                                      </div>
+                                      <div className="ml-3 text-sm leading-6">
+                                          <label htmlFor={optionKey} className={`font-medium text-slate-900 dark:text-slate-100 ${isLoading ? 'text-slate-500 dark:text-slate-400' : ''}`}>
+                                              {labels[optionKey]}
+                                          </label>
+                                      </div>
+                                  </div>
+                              );
+                          })}
+                      </div>
+                    </fieldset>
                 </div>
               </div>
 
@@ -281,7 +327,7 @@ const App: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isFormIncomplete || isLoading}
-                    className="w-full flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-colors duration-200"
+                    className="w-full flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:text-slate-500 dark:disabled:text-slate-400 disabled:cursor-not-allowed transition-colors duration-200"
                   >
                     {isLoading ? 'Generating... Please Wait' : '✨ Generate Content'}
                   </button>
@@ -291,69 +337,53 @@ const App: React.FC = () => {
                       type="button"
                       onClick={handleReset}
                       disabled={isLoading}
-                      className="w-full px-4 py-3 text-sm font-medium bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                      className="w-full px-4 py-3 text-sm font-medium bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:bg-slate-100 disabled:dark:bg-slate-700/50 disabled:text-slate-400 disabled:dark:text-slate-500 disabled:cursor-not-allowed"
                   >
                       Reset
                   </button>
                 </Tooltip>
               </div>
             </form>
-          </div>
+          </section>
           
-          <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-lg border border-slate-200 flex flex-col">
+          <section aria-labelledby="results-heading" className="md:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 flex flex-col">
+            <h2 id="results-heading" className="sr-only">Generated Content Results</h2>
             {availableTabs.length > 0 && generatedContent && (
-                <div className="border-b border-slate-200">
-                    <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-                        {availableTabs.includes('product') && (
-                            <button
-                                onClick={() => setActiveTab('product')}
-                                className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors duration-200 focus:outline-none ${
-                                    activeTab === 'product'
-                                    ? 'border-indigo-500 text-indigo-600'
-                                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                                }`}
-                                aria-current={activeTab === 'product' ? 'page' : undefined}
-                            >
-                                Product Listing
-                            </button>
-                        )}
-                        {availableTabs.includes('images') && (
-                            <button
-                                onClick={() => setActiveTab('images')}
-                                className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors duration-200 focus:outline-none ${
-                                    activeTab === 'images'
-                                    ? 'border-indigo-500 text-indigo-600'
-                                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                                }`}
-                                aria-current={activeTab === 'images' ? 'page' : undefined}
-                            >
-                                Images
-                            </button>
-                        )}
-                        {availableTabs.includes('social') && (
-                             <button
-                                onClick={() => setActiveTab('social')}
-                                className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors duration-200 focus:outline-none ${
-                                    activeTab === 'social'
-                                    ? 'border-indigo-500 text-indigo-600'
-                                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                                }`}
-                                aria-current={activeTab === 'social' ? 'page' : undefined}
-                            >
-                                Social Media
-                            </button>
-                        )}
+                <div className="border-b border-slate-200 dark:border-slate-700">
+                    <nav role="tablist" className="-mb-px flex space-x-6" aria-label="Generated Content Tabs">
+                        {availableTabs.map((tab) => {
+                            const labels = { product: 'Product Listing', images: 'Images', social: 'Social Media' };
+                            return (
+                                <button
+                                    key={tab}
+                                    id={`tab-${tab}`}
+                                    role="tab"
+                                    aria-controls={`tabpanel-${tab}`}
+                                    aria-selected={activeTab === tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors duration-200 focus:outline-none ${
+                                        activeTab === tab
+                                        ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                                        : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'
+                                    }`}
+                                >
+                                    {labels[tab]}
+                                </button>
+                            );
+                        })}
                     </nav>
                 </div>
             )}
-             <div className="mt-4 flex-grow">
+             <div role="status" className="mt-4 flex-grow">
                 {isLoading && (
                   <div className="flex flex-col items-center justify-center h-full text-center">
                     <LoadingSpinner />
-                    <p className="mt-4 text-slate-500">
-                        AI is crafting your content and images...
+                    <p className="mt-4 text-slate-500 dark:text-slate-400">
+                        AI is crafting your content{generationOptions.images && ', images'}...
                     </p>
-                    <p className="text-sm text-slate-400">(This can take up to a minute)</p>
+                    <p className="text-sm text-slate-400 dark:text-slate-500">
+                        (This can take up to a minute)
+                    </p>
                   </div>
                 )}
                 {error && (
@@ -374,8 +404,8 @@ const App: React.FC = () => {
                     />
                 )}
                 {!isLoading && !error && !generatedContent && (
-                    <div className="flex flex-col items-center justify-center h-full text-center text-slate-500 p-4 rounded-lg bg-slate-50">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                    <div className="flex flex-col items-center justify-start pt-20 h-full text-center text-slate-500 dark:text-slate-400 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1} aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                         </svg>
                         <p className="mt-4 font-medium">Your content will appear here.</p>
@@ -383,7 +413,7 @@ const App: React.FC = () => {
                     </div>
                 )}
              </div>
-          </div>
+          </section>
         </main>
       </div>
     </div>

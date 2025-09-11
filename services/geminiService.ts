@@ -207,26 +207,34 @@ export const generateProductContent = async (
     productTitleForImages = result.productTitle || productType;
 
     // Step 2: Generate images if requested
+    let mainImagePromise: Promise<any> = Promise.resolve(undefined);
+    let usageImagesPromise: Promise<string[] | undefined> = Promise.resolve(undefined);
+
     if (options.images) {
         const imageEditPrompt = `Using the user-provided image of a "${productType}", professionally extract the product and place it on a seamless, pure white background. The final image should be a minimalist, high-quality, well-lit studio product photograph. The product must be centered. The final image must be square. Do not add any text, logos, or watermarks.`;
         
-        const mainImagePromise = ai.models.generateContent({
+        mainImagePromise = ai.models.generateContent({
             model: 'gemini-2.5-flash-image-preview',
             contents: { parts: [{ inlineData: { data: image.base64, mimeType: image.mimeType } }, { text: imageEditPrompt }] },
             config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
         });
 
-        const sceneDescriptions = await _generateSceneDescriptions(productTitleForImages, productType, coreBenefit, 6);
-        const usageImagesPromise = _generateUsageImages(image, sceneDescriptions, productType);
-        
-        const [mainImageResponse, usageImages] = await Promise.all([mainImagePromise, usageImagesPromise]);
-
+        usageImagesPromise = _generateSceneDescriptions(productTitleForImages, productType, coreBenefit, 4)
+            .then(scenes => _generateUsageImages(image, scenes, productType));
+    }
+    
+    const [mainImageResponse, usageImages] = await Promise.all([mainImagePromise, usageImagesPromise]);
+    
+    if (mainImageResponse) {
         const imagePart = mainImageResponse.candidates?.[0]?.content?.parts.find(part => part.inlineData);
         if (!imagePart?.inlineData) {
-            throw new Error("The AI failed to generate an edited product image.");
+            if (options.images) throw new Error("The AI failed to generate an edited product image.");
+        } else {
+            result.productImageBase64 = imagePart.inlineData.data;
         }
-        
-        result.productImageBase64 = imagePart.inlineData.data;
+    }
+    
+    if (usageImages) {
         result.usageImagesBase64 = usageImages;
     }
 
@@ -244,7 +252,7 @@ export const generateMoreUsageImages = async (
   productType: string,
   coreBenefit: string
 ): Promise<string[]> => {
-    const sceneDescriptions = await _generateSceneDescriptions(productTitle, productType, coreBenefit, 6);
+    const sceneDescriptions = await _generateSceneDescriptions(productTitle, productType, coreBenefit, 4);
     return await _generateUsageImages(image, sceneDescriptions, productType);
 };
 

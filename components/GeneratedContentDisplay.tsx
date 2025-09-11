@@ -17,12 +17,12 @@ interface GeneratedContentDisplayProps {
 }
 
 const ContentCard: React.FC<{ title: string; children: React.ReactNode; contentToCopy: string }> = ({ title, children, contentToCopy }) => (
-    <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 relative">
+    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700/50 relative">
         <div className="absolute top-3 right-3">
             <CopyButton textToCopy={contentToCopy} />
         </div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-3">{title}</h3>
-        <div className="text-slate-700 space-y-2 text-sm sm:text-base">
+        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">{title}</h3>
+        <div className="text-slate-700 dark:text-slate-300 space-y-2 text-sm sm:text-base">
             {children}
         </div>
     </div>
@@ -33,8 +33,8 @@ const DownloadButton: React.FC<{ imageUrl: string, fileName: string }> = ({ imag
       href={imageUrl}
       download={fileName}
       onClick={(e) => e.stopPropagation()} // Prevent modal from opening when downloading
-      className="px-3 py-1 text-xs font-medium rounded-full flex items-center transition-all duration-200 bg-slate-200 text-slate-600 hover:bg-slate-300"
-      aria-label="Download Image"
+      className="px-3 py-1 text-xs font-medium rounded-full flex items-center transition-all duration-200 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-800"
+      aria-label={`Download ${fileName}`}
     >
       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -44,14 +44,16 @@ const DownloadButton: React.FC<{ imageUrl: string, fileName: string }> = ({ imag
 );
 
 const ImageCard: React.FC<{ title: string; imageUrl: string; altText: string; downloadFileName: string; onView: () => void; }> = ({ title, imageUrl, altText, downloadFileName, onView }) => (
-    <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 relative">
+    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700/50 relative">
         <div className="absolute top-3 right-3 z-10">
             <DownloadButton imageUrl={imageUrl} fileName={downloadFileName} />
         </div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-3">{title}</h3>
-        <div 
+        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">{title}</h3>
+        <button 
+            type="button"
             onClick={onView}
-            className="flex justify-center items-center bg-white p-2 rounded-md border border-slate-200 cursor-pointer group relative"
+            className="w-full text-left flex justify-center items-center bg-white dark:bg-slate-900/50 p-2 rounded-md border border-slate-200 dark:border-slate-700 group relative focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-800"
+            aria-label={`View larger image for ${altText}`}
         >
              <img src={imageUrl} alt={altText} className="aspect-square w-full object-contain rounded"/>
              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center rounded-md">
@@ -59,7 +61,7 @@ const ImageCard: React.FC<{ title: string; imageUrl: string; altText: string; do
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
              </div>
-        </div>
+        </button>
     </div>
 );
 
@@ -89,14 +91,14 @@ const SocialShareButtons: React.FC<{ text: string }> = ({ text }) => {
     };
   
     return (
-      <div className="mt-4 pt-3 border-t border-slate-200 flex items-center gap-3">
-        <span className="text-sm font-medium text-slate-600">Share:</span>
+      <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700 flex items-center gap-3">
+        <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Share:</span>
         <Tooltip text="Share on Facebook">
           <a
             href={fbShareUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-slate-500 hover:text-blue-600 transition-colors"
+            className="text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-500 transition-colors rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-800"
             aria-label="Share on Facebook"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
@@ -109,7 +111,7 @@ const SocialShareButtons: React.FC<{ text: string }> = ({ text }) => {
             href={xShareUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-slate-500 hover:text-slate-900 transition-colors"
+            className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-800"
             aria-label="Share on X (Twitter)"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -120,7 +122,7 @@ const SocialShareButtons: React.FC<{ text: string }> = ({ text }) => {
         <Tooltip text={copied ? "Copied to clipboard!" : "Copy post for Instagram"}>
           <button
             onClick={handleCopyForInstagram}
-            className="text-slate-500 hover:text-pink-600 transition-colors disabled:text-green-600"
+            className="text-slate-500 dark:text-slate-400 hover:text-pink-600 dark:hover:text-pink-500 transition-colors disabled:text-green-600 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-800"
             aria-label="Copy post for Instagram"
             disabled={copied}
           >
@@ -139,7 +141,7 @@ const SocialShareButtons: React.FC<{ text: string }> = ({ text }) => {
             <Tooltip text="More sharing options">
                 <button
                     onClick={handleWebShare}
-                    className="text-slate-500 hover:text-indigo-600 transition-colors"
+                    className="text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-500 transition-colors rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-800"
                     aria-label="More sharing options"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -168,14 +170,21 @@ const GeneratedContentDisplay: React.FC<GeneratedContentDisplayProps> = ({
     const mainImageUrl = content.productImageBase64 ? `data:image/jpeg;base64,${content.productImageBase64}`: '';
     
     return (
-        <div className="animate-fade-in">
+        <div className="animate-fade-in h-full">
             {viewingImage && <ImageModal imageUrl={viewingImage} onClose={() => setViewingImage(null)} />}
 
-            <div key={activeTab} className="animate-fade-in-fast">
+            <div 
+                key={activeTab} 
+                id={`tabpanel-${activeTab}`}
+                role="tabpanel"
+                aria-labelledby={`tab-${activeTab}`}
+                tabIndex={0}
+                className="animate-fade-in-fast h-full focus:outline-none"
+            >
                 {activeTab === 'product' && content.productTitle && content.productDescription && (
                     <div className="space-y-6">
                         <ContentCard title="Product Listing Title" contentToCopy={content.productTitle}>
-                            <p className="font-medium text-indigo-700 bg-indigo-50 p-3 rounded-md">{content.productTitle}</p>
+                            <p className="font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/50 p-3 rounded-md">{content.productTitle}</p>
                         </ContentCard>
 
                         <ContentCard title="Product Listing Description" contentToCopy={fullDescription}>
@@ -201,14 +210,15 @@ const GeneratedContentDisplay: React.FC<GeneratedContentDisplayProps> = ({
                                 onView={() => setViewingImage(mainImageUrl)}
                             />
 
-                            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                                <h3 className="text-lg font-semibold text-slate-800 mb-3">Usage Example Images</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700/50">
+                                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">Usage Example Images</h3>
+                                <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
                                     {content.usageImagesBase64.map((imageBase64, index) => {
                                         const imageUrl = `data:image/jpeg;base64,${imageBase64}`;
+                                        const altText = `Usage example ${index + 1}`;
                                         return (
-                                            <div key={index} className="relative group cursor-pointer" onClick={() => setViewingImage(imageUrl)}>
-                                                <img src={imageUrl} alt={`Usage example ${index + 1}`} className="aspect-square w-full object-cover rounded-lg"/>
+                                            <button type="button" key={index} className="relative group focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-800 rounded-lg" onClick={() => setViewingImage(imageUrl)} aria-label={`View larger image for ${altText}`}>
+                                                <img src={imageUrl} alt={altText} className="aspect-square w-full object-cover rounded-lg"/>
                                                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center rounded-lg">
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -217,14 +227,14 @@ const GeneratedContentDisplay: React.FC<GeneratedContentDisplayProps> = ({
                                                 <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                                     <DownloadButton imageUrl={imageUrl} fileName={`usage-image-${index + 1}.jpeg`} />
                                                 </div>
-                                            </div>
+                                            </button>
                                         )
                                     })}
                                 </div>
                             </div>
                         </div>
-                        <div className="mt-6 pt-4 border-t border-slate-200 flex flex-wrap justify-center gap-4">
-                            <Tooltip text="Generate 6 more unique usage example images">
+                        <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700 flex flex-wrap justify-center gap-4">
+                            <Tooltip text="Generate 4 more unique usage example images">
                               <button
                                   onClick={onGenerateMore}
                                   disabled={isGeneratingMore}
@@ -246,13 +256,13 @@ const GeneratedContentDisplay: React.FC<GeneratedContentDisplayProps> = ({
                                     <ContentCard key={index} title={`Social Media Post #${index + 1}`} contentToCopy={fullSocialPost}>
                                         <p className="font-bold">{post.hook}</p>
                                         <p>{post.body}</p>
-                                        <p className="text-indigo-600 font-medium pt-2">{post.hashtags.join(' ')}</p>
+                                        <p className="text-indigo-600 dark:text-indigo-400 font-medium pt-2">{post.hashtags.join(' ')}</p>
                                         <SocialShareButtons text={fullSocialPost} />
                                     </ContentCard>
                                 );
                             })}
                         </div>
-                        <div className="mt-6 pt-4 border-t border-slate-200 flex flex-wrap justify-center gap-4">
+                        <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700 flex flex-wrap justify-center gap-4">
                             <Tooltip text="Generate another engaging social media post">
                               <button
                                   onClick={onGenerateNewSocialPost}

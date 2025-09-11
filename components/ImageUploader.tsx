@@ -32,6 +32,14 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, disabled =
     fileInputRef.current?.click();
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick();
+    }
+  };
+
+
   return (
     <div>
       <input
@@ -41,21 +49,26 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, disabled =
         className="hidden"
         accept="image/png, image/jpeg, image/webp"
         disabled={disabled}
+        aria-hidden="true"
       />
       <div
+        role="button"
+        aria-label="Upload product photo"
+        tabIndex={disabled ? -1 : 0}
         onClick={handleClick}
-        className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-lg transition-colors duration-200 bg-slate-50 ${
+        onKeyDown={handleKeyDown}
+        className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 dark:border-slate-600 border-dashed rounded-lg transition-colors duration-200 bg-slate-50 dark:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
           disabled 
-            ? 'cursor-not-allowed bg-slate-200 opacity-70' 
-            : 'cursor-pointer hover:border-indigo-500'
+            ? 'cursor-not-allowed bg-slate-200 dark:bg-slate-700 opacity-70' 
+            : 'cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-500'
         }`}
       >
         {imagePreviewUrl ? (
-          <img src={imagePreviewUrl} alt="Preview" className="max-h-48 rounded-lg object-contain" />
+          <img src={imagePreviewUrl} alt="Preview of uploaded product" className="max-h-48 rounded-lg object-contain" />
         ) : (
           <div className="space-y-1 text-center">
             <svg
-              className="mx-auto h-12 w-12 text-slate-400"
+              className="mx-auto h-12 w-12 text-slate-400 dark:text-slate-500"
               stroke="currentColor"
               fill="none"
               viewBox="0 0 48 48"
@@ -68,10 +81,10 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, disabled =
                 strokeLinejoin="round"
               />
             </svg>
-            <div className="flex text-sm text-slate-600">
+            <div className="flex text-sm text-slate-600 dark:text-slate-400">
               <p className="pl-1">Click to upload a file</p>
             </div>
-            <p className="text-xs text-slate-500">PNG, JPG, WEBP</p>
+            <p className="text-xs text-slate-500 dark:text-slate-500">PNG, JPG, WEBP</p>
           </div>
         )}
       </div>
