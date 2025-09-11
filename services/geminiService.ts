@@ -141,6 +141,33 @@ async function _generateUsageImages(image: UploadedImage, sceneDescriptions: str
     return successfulImages;
 }
 
+// Internal helper to generate an image for a social media post
+async function _generateSocialMediaImage(
+    baseImage: UploadedImage,
+    imagePrompt: string,
+    productType: string,
+    coreBenefit: string
+): Promise<string | undefined> {
+    try {
+        const socialImagePrompt = `Take the product from the user-provided image and seamlessly integrate it into the following photorealistic lifestyle scene, suitable for a social media post: "${imagePrompt}". The product is a "${productType}" that helps with "${coreBenefit}". The final image must be high-quality, square, and have a vibrant, eye-catching aesthetic suitable for social media. Do not add any text, logos, or watermarks.`;
+        const imageResponse = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-image-preview',
+            contents: { parts: [{ inlineData: { data: baseImage.base64, mimeType: baseImage.mimeType } }, { text: socialImagePrompt }] },
+            config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
+        });
+
+        const imagePart = imageResponse.candidates?.[0]?.content?.parts.find(part => part.inlineData);
+        if (imagePart?.inlineData) {
+            return imagePart.inlineData.data;
+        }
+        console.warn(`AI fulfilled request for social media image but returned no image data.`);
+    } catch (e) {
+        console.error("Failed to generate social media image:", e);
+    }
+    return undefined;
+}
+
+
 // Generates just the Product Listing title and description
 async function _generateProductListing(productType: string, coreBenefit: string): Promise<Pick<GeneratedContent, 'productTitle' | 'productDescription'>> {
     const prompt = `
@@ -188,21 +215,9 @@ async function _generateInitialSocialPost(image: UploadedImage, productType: str
     if (content.socialMediaPost && content.socialMediaPost.length > 0) {
         const post = content.socialMediaPost[0];
         if (post.imagePrompt) {
-            try {
-                const socialImagePrompt = `Take the product from the user-provided image and seamlessly integrate it into the following photorealistic lifestyle scene, suitable for a social media post: "${post.imagePrompt}". The product is a "${productType}" that helps with "${coreBenefit}". The final image must be high-quality, square, and have a vibrant, eye-catching aesthetic suitable for social media. Do not add any text, logos, or watermarks.`;
-                const imageResponse = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash-image-preview',
-                    contents: { parts: [{ inlineData: { data: image.base64, mimeType: image.mimeType } }, { text: socialImagePrompt }] },
-                    config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
-                });
-
-                const imagePart = imageResponse.candidates?.[0]?.content?.parts.find(part => part.inlineData);
-                if (imagePart?.inlineData) {
-                  post.imageBase64 = imagePart.inlineData.data;
-                }
-            } catch (e) {
-                console.error("Failed to generate social media image for initial post:", e);
-                // Gracefully fail, post can be displayed without an image.
+            const imageBase64 = await _generateSocialMediaImage(image, post.imagePrompt, productType, coreBenefit);
+            if (imageBase64) {
+              post.imageBase64 = imageBase64;
             }
             delete post.imagePrompt;
         }
@@ -312,19 +327,9 @@ export const generateNewSocialMediaPost = async (
   const { imagePrompt } = postContent;
 
   if (imagePrompt) {
-      try {
-          const socialImagePrompt = `Take the product from the user-provided image and seamlessly integrate it into the following photorealistic lifestyle scene, suitable for a social media post: "${imagePrompt}". The product is a "${productType}" that helps with "${coreBenefit}". The final image must be high-quality, square, and have a vibrant, eye-catching aesthetic suitable for social media. Do not add any text, logos, or watermarks.`;
-          const imageResponse = await ai.models.generateContent({
-              model: 'gemini-2.5-flash-image-preview',
-              contents: { parts: [{ inlineData: { data: image.base64, mimeType: image.mimeType } }, { text: socialImagePrompt }] },
-              config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
-          });
-          const imagePart = imageResponse.candidates?.[0]?.content?.parts.find(part => part.inlineData);
-          if (imagePart?.inlineData) {
-              postContent.imageBase64 = imagePart.inlineData.data;
-          }
-      } catch (e) {
-          console.error("Failed to generate new social media image:", e);
+      const imageBase64 = await _generateSocialMediaImage(image, imagePrompt, productType, coreBenefit);
+      if (imageBase64) {
+          postContent.imageBase64 = imageBase64;
       }
   }
 
@@ -359,19 +364,9 @@ export const generateTaglishSocialMediaPost = async (
     const { imagePrompt } = postContent;
 
     if (imagePrompt) {
-        try {
-            const socialImagePrompt = `Take the product from the user-provided image and seamlessly integrate it into the following photorealistic lifestyle scene, suitable for a social media post: "${imagePrompt}". The product is a "${productType}" that helps with "${coreBenefit}". The final image must be high-quality, square, and have a vibrant, eye-catching aesthetic suitable for social media. Do not add any text, logos, or watermarks.`;
-            const imageResponse = await ai.models.generateContent({
-                model: 'gemini-2.5-flash-image-preview',
-                contents: { parts: [{ inlineData: { data: image.base64, mimeType: image.mimeType } }, { text: socialImagePrompt }] },
-                config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
-            });
-            const imagePart = imageResponse.candidates?.[0]?.content?.parts.find(part => part.inlineData);
-            if (imagePart?.inlineData) {
-                postContent.imageBase64 = imagePart.inlineData.data;
-            }
-        } catch (e) {
-            console.error("Failed to generate Taglish social media image:", e);
+        const imageBase64 = await _generateSocialMediaImage(image, imagePrompt, productType, coreBenefit);
+        if (imageBase64) {
+            postContent.imageBase64 = imageBase64;
         }
     }
 
